@@ -28,16 +28,23 @@ BATCH_SIZE = 64
 
 def main():
 
+    print ("torch.cuda.is_available():", torch.cuda.is_available())
+    print ("torch.backends.cudnn.enabled:", torch.backends.cudnn.enabled)
     cudnn.benchmark = True
 
     # initialize and load the model
     model = DenseNet121(N_CLASSES).cuda()
+    print("type(model):", type(model))
     model = torch.nn.DataParallel(model).cuda()
+    print("type(model):", type(model))
 
     if os.path.isfile(CKPT_PATH):
         print("=> loading checkpoint")
         checkpoint = torch.load(CKPT_PATH)
-        model.load_state_dict(checkpoint['state_dict'])
+        print("type(checkpoint):", type(checkpoint)) 
+        print("checkpoint.keys()\n", checkpoint.keys())
+        model.load_state_dict(checkpoint['state_dict'])#error here
+        print("after loading - type(model):", type(model))
         print("=> loaded checkpoint")
     else:
         print("=> no checkpoint found")
@@ -45,6 +52,7 @@ def main():
     normalize = transforms.Normalize([0.485, 0.456, 0.406],
                                      [0.229, 0.224, 0.225])
 
+    print("load dataset, resize, transform, crop etc")
     test_dataset = ChestXrayDataSet(data_dir=DATA_DIR,
                                     image_list_file=TEST_IMAGE_LIST,
                                     transform=transforms.Compose([
@@ -55,14 +63,19 @@ def main():
                                         transforms.Lambda
                                         (lambda crops: torch.stack([normalize(crop) for crop in crops]))
                                     ]))
+    print("init dataloader")
     test_loader = DataLoader(dataset=test_dataset, batch_size=BATCH_SIZE,
                              shuffle=False, num_workers=8, pin_memory=True)
 
     # initialize the ground truth and output tensor
     gt = torch.FloatTensor()
+    print("type(gt):", type(gt))
     gt = gt.cuda()
+    print("type(gt):", type(gt))
     pred = torch.FloatTensor()
+    print("type(pred):", type(pred))
     pred = pred.cuda()
+    print("type(pred):", type(pred))
 
     # switch to evaluate mode
     model.eval()
